@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Código PowerShell</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f4f4f9;
+    }
+    .container {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      max-width: 400px;
+      width: 90%;
+    }
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+      color: #333333;
+    }
+    form {
+      margin-top: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      resize: none;
+      padding: 10px;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      color: #ffffff;
+      background: #007bff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.2rem;
+      }
+      textarea {
+        height: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Generador de Código PowerShell</h1>
+    <form id="policyForm">
+      <textarea id="securityPolicy" placeholder="Escribe aquí la política de seguridad..."></textarea>
+      <button type="submit">Generar Código</button>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/validate.js/0.13.1/validate.min.js"></script>
+  <script>
+    document.getElementById('policyForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      // Obtener el texto ingresado por el usuario
+      const policyText = document.getElementById('securityPolicy').value.trim();
+
+      // Validación con Validate.js
+      const constraints = {
+        policy: {
+          presence: { allowEmpty: false, message: "es requerida." },
+          format: {
+            pattern: /.*\.$/,
+            message: "debe terminar con un punto."
+          }
+        }
+      };
+
+      const validation = validate({ policy: policyText }, constraints);
+
+      if (validation) {
+        // Si hay errores, mostrar el mensaje de error
+        Swal.fire({
+          icon: 'error',
+          title: 'Error en la política',
+          text: validation.policy[0],
+        });
+      } else {
+        // Generar el código de PowerShell
+        const generatedCode = `
+# PowerShell Script para Aplicar la Política de Seguridad
+# -------------------------------------------------------
+# Este script aplica la siguiente política de seguridad:
+# "${policyText}"
+# Generado automáticamente por la aplicación web.
+
+# Definir la política de seguridad
+$securityPolicy = @"
+${policyText}
+"@
+
+# Aplicar la política de seguridad
+Write-Host "Aplicando la política de seguridad..." -ForegroundColor Green
+Write-Host "Política definida: $securityPolicy"
+
+# Registrar la política en un archivo de log
+$logFilePath = "C:\\Logs\\policy_log.txt"
+try {
+    if (-not (Test-Path -Path (Split-Path -Path $logFilePath))) {
+        New-Item -ItemType Directory -Path (Split-Path -Path $logFilePath) -Force | Out-Null
+    }
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Add-Content -Path $logFilePath -Value "[$timestamp] Política aplicada: $securityPolicy"
+    Write-Host "Política registrada en el log: $logFilePath" -ForegroundColor Green
+} catch {
+    Write-Host "Error al registrar la política en el log. $_" -ForegroundColor Red
+}
+
+Write-Host "La política de seguridad fue aplicada exitosamente." -ForegroundColor Green
+`;
+
+        // Mostrar el código generado en una ventana emergente
+        Swal.fire({
+          title: 'Código PowerShell Generado',
+          html: `
+            <textarea style="width: 100%; height: 200px; resize: none; font-family: monospace;" readonly>${generatedCode}</textarea>
+            <button id="copyButton" style="margin-top: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Copiar al Portapapeles</button>
+          `,
+          showConfirmButton: false,
+          didOpen: () => {
+            // Agregar funcionalidad para copiar al portapapeles
+            const copyButton = document.getElementById('copyButton');
+            copyButton.addEventListener('click', () => {
+              const textarea = document.querySelector('.swal2-html-container textarea');
+              textarea.select();
+              document.execCommand('copy');
+              Swal.fire({
+                icon: 'success',
+                title: 'Copiado',
+                text: 'El código ha sido copiado al portapapeles.',
+                timer: 1500,
+                showConfirmButton: false,
+              });
+            });
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
